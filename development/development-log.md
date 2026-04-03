@@ -309,3 +309,18 @@
   - no HTTP request harness yet
   - just enough end-to-end coverage to ensure the current example-install
     workflow keeps producing complete static bundles
+
+## 2026-04-03 - served example smoke harness
+
+- Added `tools/run_example_smoke.py` as the first served-example smoke harness.
+- Kept the smoke scope pragmatic and HTTP-level:
+  - serve `zig-out/examples/` on loopback with Python's standard library HTTP server
+  - fetch the installed example assets over real HTTP URLs
+  - verify status codes
+  - verify basic content types
+  - verify a few identifying response-body strings for text assets
+  - verify a missing file returns `404`
+- Added `zig build example-smoke` as the build entrypoint for this pass.
+- Kept browser automation out of scope for now; the current goal is to verify
+  that the installed example bundles are not only present on disk but also
+  servable and coherent through a minimal static hosting path.

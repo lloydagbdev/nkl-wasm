@@ -105,4 +105,11 @@ pub fn build(b: *std.Build) void {
 
     const example_check_step = b.step("example-check", "Verify installed example asset bundles");
     example_check_step.dependOn(&example_check_cmd.step);
+
+    const example_smoke_cmd = b.addSystemCommand(&.{ "python3", "tools/run_example_smoke.py" });
+    example_smoke_cmd.setCwd(b.path("."));
+    example_smoke_cmd.step.dependOn(&example_check_cmd.step);
+
+    const example_smoke_step = b.step("example-smoke", "Serve and smoke-test installed example bundles");
+    example_smoke_step.dependOn(&example_smoke_cmd.step);
 }

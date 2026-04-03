@@ -40,3 +40,9 @@ Bundle verification:
 ```bash
 zig build example-check
 ```
+
+Served smoke verification:
+
+```bash
+zig build example-smoke
+```

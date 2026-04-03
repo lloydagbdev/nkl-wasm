@@ -174,6 +174,12 @@ Example bundle verification:
 zig build example-check
 ```
 
+Served smoke check:
+
+```bash
+zig build example-smoke
+```
+
 Static serving helper:
 
 ```bash
