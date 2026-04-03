@@ -1,0 +1,2 @@
+nkl-wasm fetch example payload
+This file is served statically and requested through the package bridge.

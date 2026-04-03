@@ -1,0 +1,4 @@
+/.codex/
+.codex
+.zig-cache/
+zig-out/

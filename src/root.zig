@@ -1,0 +1,52 @@
+pub const abi = @import("abi.zig");
+pub const bridge = @import("bridge.zig");
+pub const callback = @import("callback.zig");
+pub const dom = @import("dom.zig");
+pub const fetch = @import("fetch.zig");
+pub const history = @import("history.zig");
+pub const memory = @import("memory.zig");
+pub const storage = @import("storage.zig");
+pub const timer = @import("timer.zig");
+
+pub const package_name = "nkl_wasm";
+pub const StorageKind = abi.StorageKind;
+pub const StringKind = abi.StringKind;
+pub const FetchStatus = abi.FetchStatus;
+pub const PtrLen = memory.PtrLen;
+pub const allocator = memory.allocator;
+pub const allocBytes = memory.allocBytes;
+pub const freeBytes = memory.freeBytes;
+pub const sliceFromPtrLen = memory.sliceFromPtrLen;
+pub const bytesFromPtrLen = memory.bytesFromPtrLen;
+pub const ptrLen = memory.ptrLen;
+pub const log = bridge.log;
+pub const logError = bridge.logError;
+pub const logFmt = bridge.logFmt;
+pub const nowMs = bridge.nowMs;
+
+test {
+    _ = abi;
+    _ = bridge;
+    _ = callback;
+    _ = dom;
+    _ = fetch;
+    _ = history;
+    _ = memory;
+    _ = storage;
+    _ = timer;
+    _ = package_name;
+    _ = StorageKind;
+    _ = StringKind;
+    _ = FetchStatus;
+    _ = PtrLen;
+    _ = allocator;
+    _ = allocBytes;
+    _ = freeBytes;
+    _ = sliceFromPtrLen;
+    _ = bytesFromPtrLen;
+    _ = ptrLen;
+    _ = log;
+    _ = logError;
+    _ = logFmt;
+    _ = nowMs;
+}

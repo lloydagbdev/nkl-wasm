@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>nkl-wasm echo example</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #f3f4f6;
+        color: #111827;
+      }
+      main {
+        max-width: 42rem;
+        margin: 3rem auto;
+        padding: 1.5rem;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      .controls {
+        display: flex;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+      input {
+        flex: 1;
+        min-width: 0;
+      }
+      input,
+      button {
+        padding: 0.7rem 0.85rem;
+        border-radius: 0.5rem;
+        border: 1px solid #9ca3af;
+      }
+      #echo-output,
+      #status {
+        min-height: 1.5rem;
+      }
+      #echo-output {
+        font-family: ui-monospace, monospace;
+        padding: 0.9rem;
+        background: #111827;
+        color: #f9fafb;
+        border-radius: 0.5rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #111827;
+          color: #f9fafb;
+        }
+        main {
+          background: #1f2937;
+          border-color: #374151;
+        }
+        input,
+        button {
+          background: #111827;
+          color: #f9fafb;
+          border-color: #4b5563;
+        }
+        #echo-output {
+          background: #030712;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>nkl-wasm echo</h1>
+      <p>This example exercises the package-hosted bridge and callback boundary.</p>
+      <div class="controls">
+        <input id="echo-input" type="text" placeholder="Type a message">
+        <button id="echo-button" type="button">Echo</button>
+        <button id="clear-button" type="button">Clear</button>
+      </div>
+      <p id="status">Booting…</p>
+      <pre id="echo-output"></pre>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+  </html>
