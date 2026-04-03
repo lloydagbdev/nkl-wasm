@@ -372,6 +372,10 @@ zig build bridge-js-check
 ```
 
 ```bash
+zig build example-interaction
+```
+
+```bash
 zig build verify
 ```
 
@@ -381,4 +385,5 @@ It currently covers:
 - Zig unit tests
 - installed example bundle verification
 - JS bridge negative-path checks
+- example interaction checks under a minimal DOM harness
 - served example smoke checks

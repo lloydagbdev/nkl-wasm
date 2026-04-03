@@ -221,8 +221,16 @@ pub fn build(b: *std.Build) void {
     const bridge_js_check_step = b.step("bridge-js-check", "Run negative-path checks for the packaged JS browser bridge");
     bridge_js_check_step.dependOn(&bridge_js_check_cmd.step);
 
+    const example_interaction_cmd = b.addSystemCommand(&.{ "python3", "tools/check_example_interactions.py" });
+    example_interaction_cmd.setCwd(b.path("."));
+    example_interaction_cmd.step.dependOn(&example_check_cmd.step);
+
+    const example_interaction_step = b.step("example-interaction", "Run interaction checks for shipped examples under a minimal DOM harness");
+    example_interaction_step.dependOn(&example_interaction_cmd.step);
+
     const verify_step = b.step("verify", "Run library tests and example smoke verification");
     verify_step.dependOn(&run_mod_tests.step);
+    verify_step.dependOn(&example_interaction_cmd.step);
     verify_step.dependOn(&example_smoke_cmd.step);
     verify_step.dependOn(&bridge_js_check_cmd.step);
 }

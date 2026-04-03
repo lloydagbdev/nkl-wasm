@@ -198,6 +198,12 @@ JS bridge negative-path check:
 zig build bridge-js-check
 ```
 
+Example interaction check:
+
+```bash
+zig build example-interaction
+```
+
 Static serving helper:
 
 ```bash
@@ -213,4 +219,5 @@ zig build serve -- --directory zig-out/examples/spa-like
 - Zig unit tests
 - example asset verification
 - JS bridge negative-path checks
+- example interaction checks under a minimal DOM harness
 - served example smoke checks

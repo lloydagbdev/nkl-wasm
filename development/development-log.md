@@ -489,3 +489,32 @@
 - Re-verified with:
   - `zig build test`
   - `zig build verify`
+
+## 2026-04-03 - example interaction verification harness
+
+- Added a higher-signal interaction harness for the shipped examples without
+  introducing a package-owned frontend runtime or shared demo abstraction.
+- Added:
+  - `tools/check_example_interactions.mjs`
+  - `tools/check_example_interactions.py`
+- The harness intentionally runs:
+  - the real installed example `app.js`
+  - the real compiled `app.wasm`
+  - a minimal fake DOM/window/history environment only for verification
+- Kept this intentionally narrow so it does not blur into framework shape:
+  - no shared app lifecycle abstraction was added to `src/`
+  - no package-owned router/state/view layer was added
+  - the code lives only under `tools/` as test infrastructure
+- The current interaction checks cover:
+  - echo input and button flow
+  - fetch button flow and clear flow
+  - SSR plus Wasm boot and increment flow
+  - CSR boot fetch and filter-input flow
+  - SPA-like navigation click flow and `popstate` flow
+- Added `zig build example-interaction` as a first-class build step.
+- Updated `zig build verify` so it now includes:
+  - Zig unit tests
+  - example asset checks
+  - JS bridge negative-path checks
+  - example interaction checks
+  - served example smoke checks
