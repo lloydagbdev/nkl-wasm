@@ -46,3 +46,9 @@ Served smoke verification:
 ```bash
 zig build example-smoke
 ```
+
+Combined package verification:
+
+```bash
+zig build verify
+```

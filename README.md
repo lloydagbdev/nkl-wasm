@@ -161,6 +161,12 @@ Library verification:
 zig build test
 ```
 
+High-signal package verification:
+
+```bash
+zig build verify
+```
+
 Examples:
 
 ```bash

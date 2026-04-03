@@ -112,4 +112,8 @@ pub fn build(b: *std.Build) void {
 
     const example_smoke_step = b.step("example-smoke", "Serve and smoke-test installed example bundles");
     example_smoke_step.dependOn(&example_smoke_cmd.step);
+
+    const verify_step = b.step("verify", "Run library tests and example smoke verification");
+    verify_step.dependOn(&run_mod_tests.step);
+    verify_step.dependOn(&example_smoke_cmd.step);
 }

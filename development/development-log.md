@@ -324,3 +324,16 @@
 - Kept browser automation out of scope for now; the current goal is to verify
   that the installed example bundles are not only present on disk but also
   servable and coherent through a minimal static hosting path.
+
+## 2026-04-03 - stricter smoke harness and aggregate verify step
+
+- Tightened `tools/run_example_smoke.py` in a few small but useful ways:
+  - silenced the temporary HTTP server request logs so smoke output stays clean
+  - accepted either `text/javascript` or `application/javascript` for JS assets
+  - added `HEAD` checks alongside `GET` checks for the served example assets
+- Added `zig build verify` as a higher-signal aggregate package command that
+  runs:
+  - library tests
+  - example smoke verification
+- Kept this aggregation deliberately small; the goal is one obvious command for
+  package verification without introducing a large CI-specific abstraction.
