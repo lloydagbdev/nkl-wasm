@@ -197,10 +197,20 @@ value instead of two separate integers.
 - reconstructs a `[]const u8` from a pointer and length
 - returns `""` for zero-length input
 
+`checkedSliceFromPtrLen(ptr, len)`
+
+- like `sliceFromPtrLen(...)`, but rejects non-zero lengths paired with a null
+  pointer
+
 `bytesFromPtrLen(ptr, len)`
 
 - reconstructs a mutable `[]u8`
 - returns an empty slice for zero-length input
+
+`checkedBytesFromPtrLen(ptr, len)`
+
+- like `bytesFromPtrLen(...)`, but rejects non-zero lengths paired with a null
+  pointer
 
 `ptrLen(bytes)`
 
@@ -237,9 +247,14 @@ Fields:
 Fields:
 
 - `request_id: u32`
-- `ok: bool`
+- `status_kind: abi.FetchStatus`
 - `status: u32`
 - `text: []const u8`
+
+Methods:
+
+- `ok()`
+  Returns true when `status_kind == .ok`.
 
 ### Functions
 
@@ -255,10 +270,14 @@ Fields:
 `receiveFetch(request_id, ok, status, ptr, len)`
 
 - decodes a fetch callback into `FetchCallback`
+- rejects unknown fetch status-kind integers
+- rejects non-zero lengths paired with a null pointer
 
 ### Error
 
 - `error.UnknownStringKind`
+- `error.UnknownFetchStatus`
+- `error.InvalidPtrLen`
 
 ## Bridge Module
 
@@ -462,6 +481,26 @@ What it is for:
 - `readString(ptr, len)`
 - `withWasmString(text, fn)`
 
+### Required Wasm contract
+
+The runtime validates these exports during `instantiate()`:
+
+- `memory`
+- `allocBytes`
+- `freeBytes`
+
+If one is missing or invalid, instantiation throws immediately.
+
+### Optional Wasm callback exports
+
+The runtime can call these if you provide them:
+
+- `bridgeReceiveString(...)`
+- `bridgeReceiveFetch(...)`
+- `bridgeTimerFired(...)`
+
+If one is missing, the bridge warns and drops only that callback path.
+
 ### Current JS-side host imports
 
 - log/error
@@ -473,6 +512,27 @@ What it is for:
 - timers
 - history/title
 - focus/scroll helpers
+
+### Graceful-failure behavior
+
+The runtime tries to fail gracefully when the browser environment is only
+partially available.
+
+Current behavior:
+
+- missing DOM elements produce warnings instead of exceptions
+- missing optional callback exports produce warnings instead of exceptions
+- unavailable storage returns empty reads and no-op writes/removes
+- unavailable `history.pushState(...)` becomes a warning plus no-op
+- unavailable `setTimeout(...)` becomes a warning plus no-op
+- missing `performance.now()` falls back to `Date.now()`
+
+The runtime still throws for unrecoverable boot problems such as:
+
+- missing required Wasm exports
+- failure to fetch the `.wasm` file
+- failure to instantiate the Wasm module
+- calling `readString(...)` or `withWasmString(...)` before instantiation
 
 ### Deferred for now
 

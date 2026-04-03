@@ -18,10 +18,10 @@ export fn onClearClick() void {
 }
 
 export fn bridgeReceiveFetch(request_id: u32, ok: u32, status: u32, ptr: u32, len: u32) void {
-    const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len);
+    const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len) catch return;
     if (callback.request_id != fetch_request_id) return;
 
-    if (!callback.ok) {
+    if (!callback.ok()) {
         var buffer: [128]u8 = undefined;
         const message = std.fmt.bufPrint(&buffer, "Fetch failed with status {d}.", .{callback.status}) catch "Fetch failed.";
         nkl_wasm.dom.setTextById("status", message);
@@ -38,4 +38,12 @@ export fn bridgeReceiveFetch(request_id: u32, ok: u32, status: u32, ptr: u32, le
 
 test "bridgeReceiveFetch ignores unrelated request ids" {
     bridgeReceiveFetch(99, 1, 200, 0, 0);
+}
+
+test "bridgeReceiveFetch ignores malformed payload pointers" {
+    bridgeReceiveFetch(fetch_request_id, 1, 200, 0, 4);
+}
+
+test "bridgeReceiveFetch ignores unknown fetch status kinds" {
+    bridgeReceiveFetch(fetch_request_id, 9, 200, 0, 0);
 }

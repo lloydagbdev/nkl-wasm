@@ -50,3 +50,7 @@ export fn bridgeReceiveString(kind: u32, request_id: u32, ptr: u32, len: u32) vo
 test "bridgeReceiveString ignores unknown request ids" {
     bridgeReceiveString(@intFromEnum(nkl_wasm.StringKind.input_value), 99, 0, 0);
 }
+
+test "bridgeReceiveString ignores malformed string payloads" {
+    bridgeReceiveString(@intFromEnum(nkl_wasm.StringKind.input_value), input_request_id, 0, 3);
+}

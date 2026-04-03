@@ -3,6 +3,8 @@ const memory = @import("memory.zig");
 
 pub const Error = error{
     UnknownStringKind,
+    UnknownFetchStatus,
+    InvalidPtrLen,
 };
 
 pub const StringCallback = struct {
@@ -13,9 +15,13 @@ pub const StringCallback = struct {
 
 pub const FetchCallback = struct {
     request_id: u32,
-    ok: bool,
+    status_kind: abi.FetchStatus,
     status: u32,
     text: []const u8,
+
+    pub fn ok(self: FetchCallback) bool {
+        return self.status_kind == .ok;
+    }
 };
 
 pub fn stringKindFromInt(value: u32) Error!abi.StringKind {
@@ -30,16 +36,24 @@ pub fn receiveString(kind: u32, request_id: u32, ptr: usize, len: usize) Error!S
     return .{
         .kind = try stringKindFromInt(kind),
         .request_id = request_id,
-        .text = memory.sliceFromPtrLen(ptr, len),
+        .text = try memory.checkedSliceFromPtrLen(ptr, len),
     };
 }
 
-pub fn receiveFetch(request_id: u32, ok: u32, status: u32, ptr: usize, len: usize) FetchCallback {
+pub fn fetchStatusFromInt(value: u32) Error!abi.FetchStatus {
+    return switch (value) {
+        @intFromEnum(abi.FetchStatus.failed) => .failed,
+        @intFromEnum(abi.FetchStatus.ok) => .ok,
+        else => error.UnknownFetchStatus,
+    };
+}
+
+pub fn receiveFetch(request_id: u32, ok: u32, status: u32, ptr: usize, len: usize) Error!FetchCallback {
     return .{
         .request_id = request_id,
-        .ok = ok != 0,
+        .status_kind = try fetchStatusFromInt(ok),
         .status = status,
-        .text = memory.sliceFromPtrLen(ptr, len),
+        .text = try memory.checkedSliceFromPtrLen(ptr, len),
     };
 }
 
@@ -55,11 +69,27 @@ test "receiveString rejects unknown kinds" {
     try @import("std").testing.expectError(error.UnknownStringKind, receiveString(99, 1, 0, 0));
 }
 
+test "receiveString rejects non-zero length with null pointer" {
+    try @import("std").testing.expectError(
+        error.InvalidPtrLen,
+        receiveString(@intFromEnum(abi.StringKind.input_value), 1, 0, 2),
+    );
+}
+
 test "receiveFetch decodes success and payload text" {
     const text = "payload";
-    const callback = receiveFetch(9, 1, 200, @intFromPtr(text.ptr), text.len);
-    try @import("std").testing.expect(callback.ok);
+    const callback = try receiveFetch(9, 1, 200, @intFromPtr(text.ptr), text.len);
+    try @import("std").testing.expect(callback.ok());
     try @import("std").testing.expectEqual(@as(u32, 9), callback.request_id);
+    try @import("std").testing.expectEqual(abi.FetchStatus.ok, callback.status_kind);
     try @import("std").testing.expectEqual(@as(u32, 200), callback.status);
     try @import("std").testing.expectEqualStrings(text, callback.text);
+}
+
+test "receiveFetch rejects unknown status kinds" {
+    try @import("std").testing.expectError(error.UnknownFetchStatus, receiveFetch(1, 9, 200, 0, 0));
+}
+
+test "receiveFetch rejects non-zero length with null pointer" {
+    try @import("std").testing.expectError(error.InvalidPtrLen, receiveFetch(1, 1, 200, 0, 2));
 }

@@ -18,10 +18,10 @@ export fn onFilterInput() void {
 }
 
 export fn bridgeReceiveFetch(request_id: u32, ok: u32, status: u32, ptr: u32, len: u32) void {
-    const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len);
+    const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len) catch return;
     if (callback.request_id != list_request_id) return;
 
-    if (!callback.ok) {
+    if (!callback.ok()) {
         var buffer: [128]u8 = undefined;
         const message = std.fmt.bufPrint(&buffer, "Client fetch failed with status {d}.", .{callback.status}) catch "Client fetch failed.";
         nkl_wasm.dom.setTextById("status", message);
@@ -126,6 +126,18 @@ fn appendEscaped(buffer: *std.ArrayList(u8), text: []const u8) !void {
 
 test "bridgeReceiveFetch ignores unrelated request ids" {
     bridgeReceiveFetch(99, 1, 200, 0, 0);
+}
+
+test "bridgeReceiveFetch ignores malformed list payloads" {
+    bridgeReceiveFetch(list_request_id, 1, 200, 0, 5);
+}
+
+test "bridgeReceiveFetch ignores unknown fetch status kinds" {
+    bridgeReceiveFetch(list_request_id, 9, 200, 0, 0);
+}
+
+test "bridgeReceiveString ignores malformed filter payloads" {
+    bridgeReceiveString(@intFromEnum(nkl_wasm.StringKind.input_value), filter_request_id, 0, 3);
 }
 
 test "matchesFilter is case-insensitive" {

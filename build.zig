@@ -215,7 +215,14 @@ pub fn build(b: *std.Build) void {
     const example_smoke_step = b.step("example-smoke", "Serve and smoke-test installed example bundles");
     example_smoke_step.dependOn(&example_smoke_cmd.step);
 
+    const bridge_js_check_cmd = b.addSystemCommand(&.{ "python3", "tools/check_browser_bridge_negative.py" });
+    bridge_js_check_cmd.setCwd(b.path("."));
+
+    const bridge_js_check_step = b.step("bridge-js-check", "Run negative-path checks for the packaged JS browser bridge");
+    bridge_js_check_step.dependOn(&bridge_js_check_cmd.step);
+
     const verify_step = b.step("verify", "Run library tests and example smoke verification");
     verify_step.dependOn(&run_mod_tests.step);
     verify_step.dependOn(&example_smoke_cmd.step);
+    verify_step.dependOn(&bridge_js_check_cmd.step);
 }

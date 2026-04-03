@@ -48,3 +48,7 @@ fn render() void {
 test "bridgeReceiveString ignores unrelated request ids" {
     bridgeReceiveString(@intFromEnum(nkl_wasm.StringKind.input_value), 99, 0, 0);
 }
+
+test "bridgeReceiveString ignores malformed initial state payloads" {
+    bridgeReceiveString(@intFromEnum(nkl_wasm.StringKind.input_value), initial_count_request_id, 0, 2);
+}

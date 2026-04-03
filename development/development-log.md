@@ -389,3 +389,103 @@
 - Updated build wiring, asset verification, smoke verification, docs, and the
   demo matrix so the SPA-like path now sits alongside the SSR and CSR reference
   demos.
+
+## 2026-04-03 - JS bridge robustness and graceful-failure hardening
+
+- Hardened `src/js/browser_bridge.js` because the package stability story
+  depends more on the host boundary failing well than on adding more surface
+  area right now.
+- Kept the core policy explicit:
+  - fail fast for unrecoverable boot-contract errors
+  - fail gracefully for missing optional browser capabilities when a safe
+    fallback exists
+- Added early validation during Wasm instantiation for the required exported
+  contract:
+  - `memory`
+  - `allocBytes`
+  - `freeBytes`
+- Added clearer runtime errors for attempts to use low-level string helpers
+  before instantiation completes.
+- Hardened optional browser capability paths to warn and degrade instead of
+  crashing when possible:
+  - storage access in restricted contexts
+  - missing `history.pushState(...)`
+  - missing `setTimeout(...)`
+  - missing DOM/document access
+  - missing `performance.now()` with fallback to `Date.now()`
+- Kept optional callback exports non-fatal:
+  - missing `bridgeReceiveString(...)`
+  - missing `bridgeReceiveFetch(...)`
+  - missing `bridgeTimerFired(...)`
+  now produce warnings and drop only the affected callback path.
+- Updated `docs/usage.md` and `docs/reference.md` so the package's current
+  failure model is explicit rather than implicit in the source.
+
+## 2026-04-03 - JS bridge negative-path verification
+
+- Added a dedicated JS-side negative-path harness for
+  `src/js/browser_bridge.js` instead of relying only on happy-path example
+  verification.
+- Added:
+  - `tools/check_browser_bridge_negative.mjs`
+  - `tools/check_browser_bridge_negative.py`
+- Kept the harness focused on stability and graceful-failure behavior rather
+  than browser-automation breadth.
+- The current checks cover:
+  - low-level helper rejection before bridge instantiation
+  - rejection of missing required Wasm exports during instantiation
+  - storage fallback behavior when storage access is denied
+  - warnings plus no-op behavior for missing document/history/timer
+    capabilities
+  - non-fatal behavior when fetch callback delivery is unavailable
+  - `Date.now()` fallback when `performance.now()` is unavailable
+- Added `zig build bridge-js-check` as a first-class build step.
+- Updated `zig build verify` so the aggregate package verification path now
+  includes:
+  - Zig unit tests
+  - example asset checks
+  - JS bridge negative-path checks
+  - served example smoke checks
+- Kept `node` as a soft verification dependency rather than a hard package
+  runtime requirement by wrapping the Node harness in a small Python entrypoint
+  that skips cleanly when `node` is unavailable.
+
+## 2026-04-03 - Zig callback boundary hardening
+
+- Tightened the Zig-side callback decoding layer so malformed host payloads are
+  rejected explicitly instead of being interpreted optimistically.
+- Added checked pointer-plus-length helpers in `src/memory.zig`:
+  - `checkedSliceFromPtrLen(...)`
+  - `checkedBytesFromPtrLen(...)`
+- Kept the existing unchecked helpers because they are still useful in internal
+  trusted paths, but exposed checked variants for boundary-facing decoding.
+- Hardened `src/callback.zig` so it now rejects:
+  - unknown string-kind values
+  - unknown fetch status-kind values
+  - non-zero lengths paired with a null pointer
+- Refined the fetch callback shape slightly:
+  - `FetchCallback` now carries `status_kind: abi.FetchStatus`
+  - `FetchCallback.ok()` provides the convenience success check
+- Updated the example consumers and docs to use the stricter fetch decode path
+  with `catch return`, matching the existing string callback pattern.
+- Verified the package with:
+  - `zig build test`
+  - `zig build verify`
+
+## 2026-04-03 - example-level malformed callback regression checks
+
+- Added explicit malformed-callback regression checks in the example consumers
+  so graceful failure is verified at the app boundary as well as in the library
+  helpers.
+- Added narrow tests covering:
+  - malformed string callback payloads in `examples/echo/`
+  - malformed initial-state payloads in `examples/ssr-enhance/`
+  - malformed fetch payload pointers in `examples/fetch/` and `examples/csr/`
+  - unknown fetch status-kind values in `examples/fetch/` and `examples/csr/`
+  - malformed filter input payloads in `examples/csr/`
+- Kept these tests intentionally minimal:
+  - they prove the example callbacks ignore malformed host traffic
+  - they do not introduce app-specific recovery policy beyond safe early return
+- Re-verified with:
+  - `zig build test`
+  - `zig build verify`

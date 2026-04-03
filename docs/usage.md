@@ -174,6 +174,9 @@ The packaged JS bridge expects these Wasm exports:
 - `allocBytes(len)`
 - `freeBytes(ptr, len)`
 
+Those three exports are required. If one is missing, bridge instantiation fails
+early with a direct error instead of continuing in a partially broken state.
+
 The package already provides:
 
 - `nkl_wasm.allocBytes`
@@ -187,6 +190,31 @@ Optional callback exports that the JS bridge can call if you define them:
 
 You are not required to implement every callback path. Implement only the ones
 your app uses.
+
+If an optional callback export is missing, the JS bridge warns and drops that
+specific callback path instead of crashing the whole runtime.
+
+## Failure Model
+
+`nkl-wasm` is strict about hard contract errors and forgiving about optional
+browser capability gaps.
+
+It fails fast for:
+
+- missing required Wasm exports like `memory`, `allocBytes`, or `freeBytes`
+- failure to fetch or instantiate the Wasm module
+- calling low-level helpers like `withWasmString(...)` before instantiation
+
+It degrades gracefully where possible for:
+
+- missing optional callback exports such as `bridgeReceiveFetch(...)`
+- unavailable storage in restricted browser contexts
+- unavailable `history.pushState(...)`
+- unavailable `setTimeout(...)`
+- missing DOM targets on the current page
+
+In those graceful-failure cases, the bridge prefers warning plus no-op or empty
+fallback behavior instead of taking the whole app down.
 
 ## Common Workflows
 
@@ -231,10 +259,10 @@ Receive the result:
 
 ```zig
 export fn bridgeReceiveFetch(request_id: u32, ok: u32, status: u32, ptr: u32, len: u32) void {
-    const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len);
+    const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len) catch return;
     if (callback.request_id != 2) return;
 
-    if (!callback.ok) {
+    if (!callback.ok()) {
         nkl_wasm.dom.setTextById("status", "Fetch failed.");
         return;
     }
@@ -242,6 +270,10 @@ export fn bridgeReceiveFetch(request_id: u32, ok: u32, status: u32, ptr: u32, le
     nkl_wasm.dom.setTextById("status", callback.text);
 }
 ```
+
+Like `receiveString(...)`, `receiveFetch(...)` now rejects malformed host
+payloads such as invalid status-kind values or non-zero lengths paired with a
+null pointer.
 
 ### Using storage
 
@@ -310,6 +342,13 @@ It currently handles:
 - history/title
 - focus/scroll helpers
 
+It also owns the package's current host-side robustness policy:
+
+- validate required Wasm exports during instantiation
+- warn and continue when optional browser features are unavailable
+- return empty results or drop optional callbacks when there is no safe
+  stronger fallback
+
 It intentionally does not try to become your app runtime.
 
 ## Verification
@@ -329,7 +368,17 @@ zig build example-smoke
 ```
 
 ```bash
+zig build bridge-js-check
+```
+
+```bash
 zig build verify
 ```
 
 `zig build verify` is the current highest-signal package verification command.
+It currently covers:
+
+- Zig unit tests
+- installed example bundle verification
+- JS bridge negative-path checks
+- served example smoke checks

@@ -192,6 +192,12 @@ Served smoke check:
 zig build example-smoke
 ```
 
+JS bridge negative-path check:
+
+```bash
+zig build bridge-js-check
+```
+
 Static serving helper:
 
 ```bash
@@ -201,3 +207,10 @@ zig build serve -- --directory zig-out/examples/ssr-enhance
 zig build serve -- --directory zig-out/examples/csr
 zig build serve -- --directory zig-out/examples/spa-like
 ```
+
+`zig build verify` currently runs:
+
+- Zig unit tests
+- example asset verification
+- JS bridge negative-path checks
+- served example smoke checks

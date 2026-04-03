@@ -1,6 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub const Error = error{
+    InvalidPtrLen,
+};
+
 pub const PtrLen = extern struct {
     ptr: usize,
     len: usize,
@@ -28,9 +32,21 @@ pub fn sliceFromPtrLen(ptr: usize, len: usize) []const u8 {
     return @as([*]const u8, @ptrFromInt(ptr))[0..len];
 }
 
+pub fn checkedSliceFromPtrLen(ptr: usize, len: usize) Error![]const u8 {
+    if (len == 0) return "";
+    if (ptr == 0) return error.InvalidPtrLen;
+    return sliceFromPtrLen(ptr, len);
+}
+
 pub fn bytesFromPtrLen(ptr: usize, len: usize) []u8 {
     if (len == 0) return &.{};
     return @as([*]u8, @ptrFromInt(ptr))[0..len];
+}
+
+pub fn checkedBytesFromPtrLen(ptr: usize, len: usize) Error![]u8 {
+    if (len == 0) return &.{};
+    if (ptr == 0) return error.InvalidPtrLen;
+    return bytesFromPtrLen(ptr, len);
 }
 
 pub fn ptrLen(bytes: []const u8) PtrLen {
@@ -52,6 +68,14 @@ test "sliceFromPtrLen returns empty slice for zero length" {
 
 test "bytesFromPtrLen returns empty slice for zero length" {
     try std.testing.expectEqual(@as(usize, 0), bytesFromPtrLen(0, 0).len);
+}
+
+test "checkedSliceFromPtrLen rejects non-zero length with null pointer" {
+    try std.testing.expectError(error.InvalidPtrLen, checkedSliceFromPtrLen(0, 3));
+}
+
+test "checkedBytesFromPtrLen rejects non-zero length with null pointer" {
+    try std.testing.expectError(error.InvalidPtrLen, checkedBytesFromPtrLen(0, 3));
 }
 
 test "ptrLen preserves pointer and length" {
