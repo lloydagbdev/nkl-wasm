@@ -337,3 +337,16 @@
   - example smoke verification
 - Kept this aggregation deliberately small; the goal is one obvious command for
   package verification without introducing a large CI-specific abstraction.
+
+## 2026-04-03 - docs rewrite for faster onboarding and clearer reference
+
+- Reworked `docs/usage.md` into a more productive top-down structure:
+  - quick start first
+  - shortest path to something working near the top
+  - deeper explanation and workflow details in later sections
+- Reworked `docs/reference.md` into a more explicit package map that does not
+  assume the reader already knows what each library element is.
+- The main documentation goals of this pass were:
+  - help a new reader get productive quickly
+  - make the package layers clearer
+  - explain what each module is for before listing its functions

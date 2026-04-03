@@ -1,50 +1,73 @@
 # nkl-wasm Usage
 
-This document is the practical guide to building on `nkl-wasm`.
+This document is the practical guide to becoming productive with `nkl-wasm`
+quickly.
 
-## What The Package Assumes
+The short version is:
 
-`nkl-wasm` assumes that your application wants to stay close to the Wasm host
-boundary.
+1. build a `wasm32-freestanding` Zig executable that imports `nkl_wasm`
+2. export a small set of explicit functions such as `start()` and one or more
+   callback receivers
+3. use the package wrappers for DOM, storage, fetch, timers, and history
+4. bootstrap the Wasm module in the browser with
+   [`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js)
 
-That means:
+If you read only one section first, read **Quick Start**.
 
-- your app owns structure and state
-- your app owns event wiring above the basic host bridge
-- your app owns callback dispatch policy
-- your app chooses SSR, CSR, SPA-like, or any other shape
+## Quick Start
 
-If your primary goal is framework ergonomics, components, reactivity, or hidden
-lifecycle management, `nkl-wasm` is the wrong layer to compare against those
-tools. It is intentionally closer to the Wasm/host boundary.
+### 1. Add the dependency
 
-## Mental Model
+For a local checkout during development:
 
-`nkl-wasm` is a host-boundary library.
+```zig
+.dependencies = .{
+    .nkl_wasm = .{
+        .path = "../nkl-wasm",
+    },
+},
+```
 
-Your application owns:
-
-- UI structure
-- routing
-- state
-- product-specific request ids
-- page lifecycle
-- higher-level event semantics
-
-`nkl-wasm` owns:
-
-- Wasm alloc/free exports
-- pointer/length reconstruction helpers
-- callback decoding helpers
-- thin Zig wrappers for host capabilities
-- a reusable JS runtime for browser-side host bridging
-
-## Typical Zig Setup
-
-The smallest Wasm-side setup looks like this:
+### 2. Wire the Wasm build in `build.zig`
 
 ```zig
 const std = @import("std");
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const nkl_wasm_dep = b.dependency("nkl_wasm", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const wasm_target = b.resolveTargetQuery(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
+    });
+
+    const wasm = b.addExecutable(.{
+        .name = "app",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/app_wasm.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+            .imports = &.{
+                .{ .name = "nkl_wasm", .module = nkl_wasm_dep.module("nkl_wasm") },
+            },
+        }),
+    });
+    wasm.entry = .disabled;
+    wasm.rdynamic = true;
+    wasm.import_symbols = true;
+    wasm.export_memory = true;
+}
+```
+
+### 3. Write the smallest possible Wasm-side app
+
+```zig
 const nkl_wasm = @import("nkl_wasm");
 
 const input_request_id: u32 = 1;
@@ -66,76 +89,7 @@ export fn bridgeReceiveString(kind: u32, request_id: u32, ptr: u32, len: u32) vo
 }
 ```
 
-The key point is that your exports stay explicit. `nkl-wasm` does not invent a
-hidden runtime above them.
-
-## Memory Boundary
-
-The JS runtime expects your Wasm module to export:
-
-- `memory`
-- `allocBytes(len)`
-- `freeBytes(ptr, len)`
-
-Those are already provided by the package:
-
-- `nkl_wasm.allocBytes`
-- `nkl_wasm.freeBytes`
-
-Pointer/length helpers also live in the package:
-
-- `nkl_wasm.sliceFromPtrLen(...)`
-- `nkl_wasm.bytesFromPtrLen(...)`
-- `nkl_wasm.ptrLen(...)`
-
-## Callback Handling
-
-The main callback helpers live under `nkl_wasm.callback`.
-
-For string callbacks:
-
-```zig
-const callback = nkl_wasm.callback.receiveString(kind, request_id, ptr, len) catch return;
-```
-
-For fetch callbacks:
-
-```zig
-const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len);
-```
-
-These helpers decode the current shared contract without imposing any app-level
-dispatch model.
-
-## Browser Capability Wrappers
-
-The package currently provides small wrapper modules for:
-
-- `nkl_wasm.dom`
-- `nkl_wasm.storage`
-- `nkl_wasm.fetch`
-- `nkl_wasm.history`
-- `nkl_wasm.timer`
-- `nkl_wasm.bridge`
-
-Common examples:
-
-```zig
-nkl_wasm.dom.setTextById("status", "Loading...");
-nkl_wasm.dom.getValueById(1, "search-input");
-nkl_wasm.fetch.fetchText(2, "GET", "/api/data", null);
-nkl_wasm.history.push("/docs");
-nkl_wasm.timer.setTimeout(1, 60);
-```
-
-These are capability wrappers, not app abstractions.
-
-## JS Runtime Setup
-
-The packaged browser bridge lives at
-[`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js).
-
-Typical setup:
+### 4. Bootstrap it in the browser
 
 ```js
 import { createBrowserBridge } from "./browser_bridge.js";
@@ -151,7 +105,185 @@ if (typeof instance.exports.start === "function") {
 }
 ```
 
-The JS runtime currently covers:
+At that point you already have a usable path:
+
+- Zig owns the Wasm app logic
+- JS stays a thin host bridge
+- browser interactions cross the boundary through explicit exports/imports
+
+## Fastest Path To Something Working
+
+If you want a working baseline immediately, use one of the shipped examples:
+
+```bash
+zig build example-echo
+zig build serve -- --directory zig-out/examples/echo
+```
+
+```bash
+zig build example-fetch
+zig build serve -- --directory zig-out/examples/fetch
+```
+
+Use these examples as dependency-style references, not as framework templates.
+
+## Mental Model
+
+`nkl-wasm` is a host-boundary library.
+
+Your application owns:
+
+- UI structure
+- routing
+- state
+- product-specific request ids
+- page lifecycle
+- higher-level event semantics
+
+`nkl-wasm` owns:
+
+- Wasm alloc/free exports
+- pointer/length helpers
+- callback decoding helpers
+- thin capability wrappers for host operations
+- a reusable browser bridge for JS-side host bootstrapping
+
+The package reduces repeated host-boundary work. It does not take ownership of
+your application architecture.
+
+## The Minimum Runtime Contract
+
+The packaged JS bridge expects these Wasm exports:
+
+- `memory`
+- `allocBytes(len)`
+- `freeBytes(ptr, len)`
+
+The package already provides:
+
+- `nkl_wasm.allocBytes`
+- `nkl_wasm.freeBytes`
+
+Optional callback exports that the JS bridge can call if you define them:
+
+- `bridgeReceiveString(kind, request_id, ptr, len)`
+- `bridgeReceiveFetch(request_id, ok, status, ptr, len)`
+- `bridgeTimerFired(timer_id)`
+
+You are not required to implement every callback path. Implement only the ones
+your app uses.
+
+## Common Workflows
+
+### Reading input values
+
+Request a value:
+
+```zig
+nkl_wasm.dom.getValueById(1, "search-input");
+```
+
+Receive it later:
+
+```zig
+export fn bridgeReceiveString(kind: u32, request_id: u32, ptr: u32, len: u32) void {
+    const callback = nkl_wasm.callback.receiveString(kind, request_id, ptr, len) catch return;
+    if (callback.kind != .input_value) return;
+    if (callback.request_id != 1) return;
+
+    // callback.text is your input value
+}
+```
+
+### Updating the DOM
+
+```zig
+nkl_wasm.dom.setTextById("status", "Loading...");
+nkl_wasm.dom.setHtmlById("preview", "<strong>ok</strong>");
+nkl_wasm.dom.setValueById("search-input", "");
+nkl_wasm.dom.focusById("search-input");
+```
+
+### Fetching text
+
+Start a fetch:
+
+```zig
+nkl_wasm.fetch.fetchText(2, "GET", "/api/data", null);
+```
+
+Receive the result:
+
+```zig
+export fn bridgeReceiveFetch(request_id: u32, ok: u32, status: u32, ptr: u32, len: u32) void {
+    const callback = nkl_wasm.callback.receiveFetch(request_id, ok, status, ptr, len);
+    if (callback.request_id != 2) return;
+
+    if (!callback.ok) {
+        nkl_wasm.dom.setTextById("status", "Fetch failed.");
+        return;
+    }
+
+    nkl_wasm.dom.setTextById("status", callback.text);
+}
+```
+
+### Using storage
+
+```zig
+nkl_wasm.storage.set(.local, "theme", "dark");
+nkl_wasm.storage.get(.local, 3, "theme");
+nkl_wasm.storage.remove(.session, "draft");
+```
+
+Storage reads come back through `bridgeReceiveString(...)` with
+`callback.kind == .storage`.
+
+### Using timers
+
+```zig
+nkl_wasm.timer.setTimeout(1, 60);
+```
+
+Then:
+
+```zig
+export fn bridgeTimerFired(timer_id: u32) void {
+    if (timer_id != 1) return;
+    // do work
+}
+```
+
+## What Each Module Is For
+
+- `nkl_wasm.memory`
+  Low-level pointer/length and alloc/free helpers.
+- `nkl_wasm.abi`
+  Shared enums and export-name constants used at the boundary.
+- `nkl_wasm.callback`
+  Helpers for decoding host-to-Wasm callback payloads.
+- `nkl_wasm.bridge`
+  The lowest-level Zig-side host bridge layer.
+- `nkl_wasm.dom`
+  Thin wrappers for DOM-oriented host operations.
+- `nkl_wasm.storage`
+  Thin wrappers for local/session storage operations.
+- `nkl_wasm.fetch`
+  Thin wrappers for fetch-driven text callbacks.
+- `nkl_wasm.history`
+  Thin wrappers for history push and document title updates.
+- `nkl_wasm.timer`
+  Thin wrappers for timeout scheduling and clearing.
+
+If you need the exact exported names or function list, use
+[`reference.md`](/home/lloyd/dev/home-edge/prj/nkl-wasm/docs/reference.md).
+
+## JS Runtime Details
+
+The packaged browser bridge lives at
+[`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js).
+
+It currently handles:
 
 - Wasm instantiation
 - import merging
@@ -163,21 +295,26 @@ The JS runtime currently covers:
 - history/title
 - focus/scroll helpers
 
-## Examples
+It intentionally does not try to become your app runtime.
 
-Two shipped examples currently exercise the package:
+## Verification
 
-- [`echo/`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples/echo)
-- [`fetch/`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples/fetch)
-
-Build and serve them like this:
+Useful commands:
 
 ```bash
-zig build example-echo
-zig build serve -- --directory zig-out/examples/echo
+zig build test
 ```
 
 ```bash
-zig build example-fetch
-zig build serve -- --directory zig-out/examples/fetch
+zig build example-check
 ```
+
+```bash
+zig build example-smoke
+```
+
+```bash
+zig build verify
+```
+
+`zig build verify` is the current highest-signal package verification command.
