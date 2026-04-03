@@ -24,6 +24,25 @@ EXPECTED = {
         "data.txt": "nkl-wasm fetch example payload",
         "index.html": "nkl-wasm fetch",
     },
+    "ssr-enhance": {
+        "app.js": "createBrowserBridge",
+        "app.wasm": None,
+        "browser_bridge.js": "createBrowserBridge",
+        "index.html": "SSR + Wasm reference path",
+    },
+    "csr": {
+        "app.js": "createBrowserBridge",
+        "app.wasm": None,
+        "browser_bridge.js": "createBrowserBridge",
+        "data.txt": "Alpha item",
+        "index.html": "CSR reference path",
+    },
+    "spa-like": {
+        "app.js": "createBrowserBridge",
+        "app.wasm": None,
+        "browser_bridge.js": "createBrowserBridge",
+        "index.html": "SPA-like reference path",
+    },
 }
 
 

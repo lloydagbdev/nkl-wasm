@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>nkl-wasm SSR + Wasm reference</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #f3f4f6;
+        color: #111827;
+      }
+      main {
+        max-width: 46rem;
+        margin: 3rem auto;
+        padding: 1.5rem;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+      }
+      .server-note,
+      .status {
+        padding: 0.9rem;
+        border-radius: 0.5rem;
+      }
+      .server-note {
+        background: #e5e7eb;
+      }
+      .status {
+        background: #dbeafe;
+      }
+      .counter {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      button {
+        padding: 0.7rem 0.85rem;
+        border-radius: 0.5rem;
+        border: 1px solid #9ca3af;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #111827;
+          color: #f9fafb;
+        }
+        main {
+          background: #1f2937;
+          border-color: #374151;
+        }
+        .server-note {
+          background: #111827;
+        }
+        .status {
+          background: #1e3a8a;
+        }
+        button {
+          background: #111827;
+          color: #f9fafb;
+          border-color: #4b5563;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>SSR + Wasm reference path</h1>
+      <p class="server-note">
+        This HTML is the server-rendered starting point. The visible counter value below is already in the HTML before Wasm runs.
+      </p>
+      <input id="initial-count" type="hidden" value="3">
+      <p>Initial count from server-rendered HTML: <strong id="count-value">3</strong></p>
+      <p id="wasm-status" class="status">Wasm not booted yet.</p>
+      <div class="counter">
+        <button id="increment-button" type="button" disabled>Increment in Wasm</button>
+      </div>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+  </html>

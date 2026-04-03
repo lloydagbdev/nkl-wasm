@@ -22,6 +22,15 @@ Current example:
 - `fetch/`
   Build with `zig build example-fetch`, then serve `zig-out/examples/fetch/`
   through any static file server.
+- `ssr-enhance/`
+  Build with `zig build example-ssr-enhance`, then serve
+  `zig-out/examples/ssr-enhance/` through any static file server.
+- `csr/`
+  Build with `zig build example-csr`, then serve
+  `zig-out/examples/csr/` through any static file server.
+- `spa-like/`
+  Build with `zig build example-spa-like`, then serve
+  `zig-out/examples/spa-like/` through any static file server.
 
 Convenience command:
 
@@ -33,6 +42,21 @@ zig build serve -- --directory zig-out/examples/echo
 ```bash
 zig build example-fetch
 zig build serve -- --directory zig-out/examples/fetch
+```
+
+```bash
+zig build example-ssr-enhance
+zig build serve -- --directory zig-out/examples/ssr-enhance
+```
+
+```bash
+zig build example-csr
+zig build serve -- --directory zig-out/examples/csr
+```
+
+```bash
+zig build example-spa-like
+zig build serve -- --directory zig-out/examples/spa-like
 ```
 
 Bundle verification:

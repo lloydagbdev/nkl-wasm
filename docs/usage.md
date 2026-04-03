@@ -125,6 +125,21 @@ zig build example-fetch
 zig build serve -- --directory zig-out/examples/fetch
 ```
 
+```bash
+zig build example-ssr-enhance
+zig build serve -- --directory zig-out/examples/ssr-enhance
+```
+
+```bash
+zig build example-csr
+zig build serve -- --directory zig-out/examples/csr
+```
+
+```bash
+zig build example-spa-like
+zig build serve -- --directory zig-out/examples/spa-like
+```
+
 Use these examples as dependency-style references, not as framework templates.
 
 ## Mental Model

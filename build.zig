@@ -66,6 +66,76 @@ pub fn build(b: *std.Build) void {
         b.path("src/js/browser_bridge.js"),
         "examples/fetch/browser_bridge.js",
     );
+    const ssr_enhance_wasm = b.addExecutable(.{
+        .name = "nkl_wasm_ssr_enhance",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/ssr-enhance/app.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+            .imports = &.{
+                .{ .name = "nkl_wasm", .module = mod },
+            },
+        }),
+    });
+    ssr_enhance_wasm.entry = .disabled;
+    ssr_enhance_wasm.rdynamic = true;
+    ssr_enhance_wasm.import_symbols = true;
+    ssr_enhance_wasm.export_memory = true;
+
+    const install_ssr_enhance_wasm = b.addInstallFile(ssr_enhance_wasm.getEmittedBin(), "examples/ssr-enhance/app.wasm");
+    const install_ssr_enhance_index = b.addInstallFile(b.path("examples/ssr-enhance/index.html"), "examples/ssr-enhance/index.html");
+    const install_ssr_enhance_app_js = b.addInstallFile(b.path("examples/ssr-enhance/app.js"), "examples/ssr-enhance/app.js");
+    const install_ssr_enhance_bridge_js = b.addInstallFile(
+        b.path("src/js/browser_bridge.js"),
+        "examples/ssr-enhance/browser_bridge.js",
+    );
+    const csr_wasm = b.addExecutable(.{
+        .name = "nkl_wasm_csr",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/csr/app.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+            .imports = &.{
+                .{ .name = "nkl_wasm", .module = mod },
+            },
+        }),
+    });
+    csr_wasm.entry = .disabled;
+    csr_wasm.rdynamic = true;
+    csr_wasm.import_symbols = true;
+    csr_wasm.export_memory = true;
+
+    const install_csr_wasm = b.addInstallFile(csr_wasm.getEmittedBin(), "examples/csr/app.wasm");
+    const install_csr_index = b.addInstallFile(b.path("examples/csr/index.html"), "examples/csr/index.html");
+    const install_csr_app_js = b.addInstallFile(b.path("examples/csr/app.js"), "examples/csr/app.js");
+    const install_csr_data = b.addInstallFile(b.path("examples/csr/data.txt"), "examples/csr/data.txt");
+    const install_csr_bridge_js = b.addInstallFile(
+        b.path("src/js/browser_bridge.js"),
+        "examples/csr/browser_bridge.js",
+    );
+    const spa_like_wasm = b.addExecutable(.{
+        .name = "nkl_wasm_spa_like",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/spa-like/app.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+            .imports = &.{
+                .{ .name = "nkl_wasm", .module = mod },
+            },
+        }),
+    });
+    spa_like_wasm.entry = .disabled;
+    spa_like_wasm.rdynamic = true;
+    spa_like_wasm.import_symbols = true;
+    spa_like_wasm.export_memory = true;
+
+    const install_spa_like_wasm = b.addInstallFile(spa_like_wasm.getEmittedBin(), "examples/spa-like/app.wasm");
+    const install_spa_like_index = b.addInstallFile(b.path("examples/spa-like/index.html"), "examples/spa-like/index.html");
+    const install_spa_like_app_js = b.addInstallFile(b.path("examples/spa-like/app.js"), "examples/spa-like/app.js");
+    const install_spa_like_bridge_js = b.addInstallFile(
+        b.path("src/js/browser_bridge.js"),
+        "examples/spa-like/browser_bridge.js",
+    );
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_mod_tests.step);
@@ -82,6 +152,25 @@ pub fn build(b: *std.Build) void {
     example_fetch_step.dependOn(&install_fetch_app_js.step);
     example_fetch_step.dependOn(&install_fetch_data.step);
     example_fetch_step.dependOn(&install_fetch_bridge_js.step);
+
+    const example_ssr_enhance_step = b.step("example-ssr-enhance", "Install the SSR plus Wasm enhancement example assets");
+    example_ssr_enhance_step.dependOn(&install_ssr_enhance_wasm.step);
+    example_ssr_enhance_step.dependOn(&install_ssr_enhance_index.step);
+    example_ssr_enhance_step.dependOn(&install_ssr_enhance_app_js.step);
+    example_ssr_enhance_step.dependOn(&install_ssr_enhance_bridge_js.step);
+
+    const example_csr_step = b.step("example-csr", "Install the client-rendered Wasm example assets");
+    example_csr_step.dependOn(&install_csr_wasm.step);
+    example_csr_step.dependOn(&install_csr_index.step);
+    example_csr_step.dependOn(&install_csr_app_js.step);
+    example_csr_step.dependOn(&install_csr_data.step);
+    example_csr_step.dependOn(&install_csr_bridge_js.step);
+
+    const example_spa_like_step = b.step("example-spa-like", "Install the SPA-like Wasm example assets");
+    example_spa_like_step.dependOn(&install_spa_like_wasm.step);
+    example_spa_like_step.dependOn(&install_spa_like_index.step);
+    example_spa_like_step.dependOn(&install_spa_like_app_js.step);
+    example_spa_like_step.dependOn(&install_spa_like_bridge_js.step);
 
     const serve_cmd = b.addSystemCommand(&.{ "python3", "-m", "http.server" });
     if (b.args) |args| {
@@ -102,6 +191,19 @@ pub fn build(b: *std.Build) void {
     example_check_cmd.step.dependOn(&install_fetch_app_js.step);
     example_check_cmd.step.dependOn(&install_fetch_data.step);
     example_check_cmd.step.dependOn(&install_fetch_bridge_js.step);
+    example_check_cmd.step.dependOn(&install_ssr_enhance_wasm.step);
+    example_check_cmd.step.dependOn(&install_ssr_enhance_index.step);
+    example_check_cmd.step.dependOn(&install_ssr_enhance_app_js.step);
+    example_check_cmd.step.dependOn(&install_ssr_enhance_bridge_js.step);
+    example_check_cmd.step.dependOn(&install_csr_wasm.step);
+    example_check_cmd.step.dependOn(&install_csr_index.step);
+    example_check_cmd.step.dependOn(&install_csr_app_js.step);
+    example_check_cmd.step.dependOn(&install_csr_data.step);
+    example_check_cmd.step.dependOn(&install_csr_bridge_js.step);
+    example_check_cmd.step.dependOn(&install_spa_like_wasm.step);
+    example_check_cmd.step.dependOn(&install_spa_like_index.step);
+    example_check_cmd.step.dependOn(&install_spa_like_app_js.step);
+    example_check_cmd.step.dependOn(&install_spa_like_bridge_js.step);
 
     const example_check_step = b.step("example-check", "Verify installed example asset bundles");
     example_check_step.dependOn(&example_check_cmd.step);

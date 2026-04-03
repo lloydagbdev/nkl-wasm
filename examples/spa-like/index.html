@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>nkl-wasm SPA-like reference</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #f3f4f6;
+        color: #111827;
+      }
+      main {
+        max-width: 48rem;
+        margin: 3rem auto;
+        padding: 1.5rem;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+      }
+      nav {
+        display: flex;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+      button {
+        padding: 0.7rem 0.85rem;
+        border-radius: 0.5rem;
+        border: 1px solid #9ca3af;
+      }
+      .is-active {
+        background: #dbeafe;
+        border-color: #2563eb;
+      }
+      #view-content,
+      #status {
+        padding: 0.9rem;
+        border-radius: 0.5rem;
+      }
+      #view-content {
+        background: #e5e7eb;
+      }
+      #status {
+        background: #ede9fe;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #111827;
+          color: #f9fafb;
+        }
+        main {
+          background: #1f2937;
+          border-color: #374151;
+        }
+        button {
+          background: #111827;
+          color: #f9fafb;
+          border-color: #4b5563;
+        }
+        .is-active {
+          background: #1e3a8a;
+          border-color: #60a5fa;
+        }
+        #view-content {
+          background: #111827;
+        }
+        #status {
+          background: #4c1d95;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>SPA-like reference path</h1>
+      <p>
+        This demo keeps navigation explicit. Wasm owns the current view and pushes query-string URLs; JavaScript only forwards button clicks and <code>popstate</code>.
+      </p>
+      <nav>
+        <button id="nav-home" type="button">Home</button>
+        <button id="nav-about" type="button">About</button>
+        <button id="nav-notes" type="button">Notes</button>
+      </nav>
+      <p id="status">Booting…</p>
+      <div id="view-content">No view rendered yet.</div>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+  </html>

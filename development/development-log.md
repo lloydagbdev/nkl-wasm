@@ -350,3 +350,42 @@
   - help a new reader get productive quickly
   - make the package layers clearer
   - explain what each module is for before listing its functions
+
+## 2026-04-03 - demo matrix and first architecture-reference demo
+
+- Added `development/demo-matrix.md` to define the intended self-contained demo
+  set and to keep the “reference paths, not framework laws” positioning explicit.
+- Added `examples/ssr-enhance/` as the first architecture-reference demo beyond
+  the primitive `echo/` and `fetch/` examples.
+- Kept the SSR-plus-Wasm demo intentionally small:
+  - HTML starts in a server-rendered-looking state
+  - a hidden input carries initial state
+  - Wasm reads that initial state through the normal host boundary
+  - Wasm then owns the interactive counter behavior
+- Updated build, example verification, smoke verification, and docs so the new
+  demo is treated as a first-class reference path alongside the smaller demos.
+
+## 2026-04-03 - second architecture-reference demo for CSR
+
+- Added `examples/csr/` as the client-rendered reference path.
+- Kept the CSR demo intentionally small and clearly different from the SSR demo:
+  - the HTML starts as a static shell only
+  - the item list is not rendered in the initial HTML
+  - Wasm fetches `data.txt` after boot
+  - Wasm renders the content into the page after the fetch callback arrives
+- Updated build wiring, asset verification, smoke verification, and docs so the
+  CSR demo is treated as another first-class reference path rather than a side
+  experiment.
+
+## 2026-04-03 - third architecture-reference demo for SPA-like navigation
+
+- Added `examples/spa-like/` as the SPA-like reference path.
+- Kept the demo intentionally narrow and explicit:
+  - Wasm owns the current view state
+  - Wasm pushes query-string URLs through `history.push(...)`
+  - JS only forwards button clicks and `popstate` back into Wasm
+  - view rendering stays explicit rather than being hidden behind a router or
+    framework lifecycle
+- Updated build wiring, asset verification, smoke verification, docs, and the
+  demo matrix so the SPA-like path now sits alongside the SSR and CSR reference
+  demos.

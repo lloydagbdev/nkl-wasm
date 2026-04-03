@@ -151,6 +151,9 @@ If you prefer code first, these are the main example entrypoints:
 
 - [`app.zig`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples/echo/app.zig): smallest DOM/input callback example
 - [`app.zig`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples/fetch/app.zig): minimal fetch callback example
+- [`app.zig`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples/ssr-enhance/app.zig): SSR plus Wasm enhancement reference path
+- [`app.zig`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples/csr/app.zig): client-rendered reference path
+- [`app.zig`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples/spa-like/app.zig): SPA-like navigation reference path
 - [`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js): packaged JS host runtime
 
 ## Build And Run
@@ -172,6 +175,9 @@ Examples:
 ```bash
 zig build example-echo
 zig build example-fetch
+zig build example-ssr-enhance
+zig build example-csr
+zig build example-spa-like
 ```
 
 Example bundle verification:
@@ -191,4 +197,7 @@ Static serving helper:
 ```bash
 zig build serve -- --directory zig-out/examples/echo
 zig build serve -- --directory zig-out/examples/fetch
+zig build serve -- --directory zig-out/examples/ssr-enhance
+zig build serve -- --directory zig-out/examples/csr
+zig build serve -- --directory zig-out/examples/spa-like
 ```
