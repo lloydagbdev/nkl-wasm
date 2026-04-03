@@ -34,3 +34,9 @@ zig build serve -- --directory zig-out/examples/echo
 zig build example-fetch
 zig build serve -- --directory zig-out/examples/fetch
 ```
+
+Bundle verification:
+
+```bash
+zig build example-check
+```

@@ -259,3 +259,53 @@
   - capability wrapper modules
   - packaged JS runtime usage
   - shipped examples and local serving flow
+
+## 2026-04-03 - bridge stub hardening cleanup
+
+- Performed a narrow internal hardening pass on `src/bridge.zig`.
+- Kept the public package surface unchanged while reducing repetitive native
+  no-op stub boilerplate for non-wasm builds.
+- Consolidated repeated stub implementations into shared helper functions for:
+  - pointer/length no-ops
+  - request-id plus pointer/length no-ops
+  - id/value and id/bool no-ops
+  - storage no-ops
+  - fetch no-op
+  - selector/class no-op
+  - timer and scalar no-ops
+- The goal of this pass was maintainability rather than feature growth:
+  future bridge additions now have a smaller amount of internal repetition to
+  match when keeping native package tests compilable.
+
+## 2026-04-03 - internal bridge import split
+
+- Continued the hardening pass by splitting the raw browser import declarations
+  and non-wasm stub-selection logic out of `src/bridge.zig`.
+- Added `src/internal/browser_imports.zig` as the internal owner of:
+  - raw `extern "env"` declarations
+  - native no-op fallback helpers
+  - current import-selection constants for wasm vs native builds
+- Reduced `src/bridge.zig` to a smaller wrapper layer over that internal module.
+- Kept the public package surface unchanged:
+  - no root export changes
+  - no wrapper module changes
+  - no JS runtime changes
+- The goal of this pass was to make the bridge easier to extend without letting
+  one public-facing file keep growing as the raw host surface expands.
+
+## 2026-04-03 - example bundle verification step
+
+- Added `tools/check_example_assets.py` as the first black-box verification path
+  for the shipped examples.
+- Kept the check intentionally small and static-asset-oriented:
+  - verify the installed example directories exist under `zig-out/examples/`
+  - verify the expected files exist
+  - verify files are non-empty
+  - verify a few identifying content strings in the text assets
+- Added `zig build example-check` as the build entrypoint for this verification
+  pass.
+- Kept the first black-box verification scope intentionally narrow:
+  - no browser automation yet
+  - no HTTP request harness yet
+  - just enough end-to-end coverage to ensure the current example-install
+    workflow keeps producing complete static bundles

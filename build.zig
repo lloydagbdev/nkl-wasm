@@ -90,4 +90,19 @@ pub fn build(b: *std.Build) void {
 
     const serve_step = b.step("serve", "Serve a static directory via python3 -m http.server");
     serve_step.dependOn(&serve_cmd.step);
+
+    const example_check_cmd = b.addSystemCommand(&.{ "python3", "tools/check_example_assets.py" });
+    example_check_cmd.setCwd(b.path("."));
+    example_check_cmd.step.dependOn(&install_echo_wasm.step);
+    example_check_cmd.step.dependOn(&install_echo_index.step);
+    example_check_cmd.step.dependOn(&install_echo_app_js.step);
+    example_check_cmd.step.dependOn(&install_echo_bridge_js.step);
+    example_check_cmd.step.dependOn(&install_fetch_wasm.step);
+    example_check_cmd.step.dependOn(&install_fetch_index.step);
+    example_check_cmd.step.dependOn(&install_fetch_app_js.step);
+    example_check_cmd.step.dependOn(&install_fetch_data.step);
+    example_check_cmd.step.dependOn(&install_fetch_bridge_js.step);
+
+    const example_check_step = b.step("example-check", "Verify installed example asset bundles");
+    example_check_step.dependOn(&example_check_cmd.step);
 }

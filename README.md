@@ -168,6 +168,12 @@ zig build example-echo
 zig build example-fetch
 ```
 
+Example bundle verification:
+
+```bash
+zig build example-check
+```
+
 Static serving helper:
 
 ```bash
