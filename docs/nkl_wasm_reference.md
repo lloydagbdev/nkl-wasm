@@ -451,6 +451,8 @@ File:
 What it is:
 
 - the packaged browser-side host runtime for this library
+- the full compatibility bridge profile; selected bridge assets are also
+  available through the Zig build dependency
 
 What it is for:
 
@@ -462,6 +464,56 @@ What it is for:
 ### Main entrypoint
 
 - `createBrowserBridge(options = {})`
+
+### Selected bridge assets
+
+Host projects may request a smaller generated bridge asset without changing the
+JS API. The full checked-in
+[`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js)
+remains the compatibility profile and the default output.
+
+- dependency option: `browser_bridge_caps`
+- selected JS file: `nkl_wasm_dep.namedLazyPath("browser_bridge_js")`
+- Zig embed module: `nkl_wasm_dep.namedLazyPath("browser_bridge_asset_zig")`
+
+Supported `browser_bridge_caps` values:
+
+- `full`
+- `core`
+- comma-separated capability groups: `dom`, `storage`, `fetch`, `timer`,
+  `history`
+
+`core` includes instantiation, import merging, memory/string exchange, logging,
+and timing imports. Capability groups add coherent import blocks and their
+required callback helpers.
+
+Capability groups:
+
+- `dom`
+  DOM reads/writes, class helpers, focus, scroll, and string callback delivery.
+- `storage`
+  localStorage/sessionStorage operations and string callback delivery.
+- `fetch`
+  text fetch and fetch callback delivery.
+- `timer`
+  timeout scheduling/clearing and timer callback delivery.
+- `history`
+  history push and document title updates.
+
+Example build wiring:
+
+```zig
+const nkl_wasm_dep = b.dependency("nkl_wasm", .{
+    .target = target,
+    .optimize = optimize,
+    .browser_bridge_caps = "dom,fetch",
+});
+
+_ = generated_assets.addCopyFile(
+    nkl_wasm_dep.namedLazyPath("browser_bridge_js"),
+    "browser_bridge.js",
+);
+```
 
 ### Main options
 

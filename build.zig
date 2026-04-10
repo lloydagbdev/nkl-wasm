@@ -1,8 +1,17 @@
 const std = @import("std");
+const bridge_assets = @import("src/js/bridge_assets.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const bridge_caps = b.option(
+        []const u8,
+        "browser_bridge_caps",
+        "Comma-separated browser bridge capability groups: full, core, dom, storage, fetch, timer, history",
+    ) orelse "full";
+    const selected_bridge = bridgeAsset(b, bridge_caps);
+    b.addNamedLazyPath("browser_bridge_js", selected_bridge.js);
+    b.addNamedLazyPath("browser_bridge_asset_zig", selected_bridge.module);
 
     const mod = b.addModule("nkl_wasm", .{
         .root_source_file = b.path("src/root.zig"),
@@ -14,6 +23,14 @@ pub fn build(b: *std.Build) void {
         .root_module = mod,
     });
     const run_mod_tests = b.addRunArtifact(mod_tests);
+    const bridge_asset_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/js/bridge_assets.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const run_bridge_asset_tests = b.addRunArtifact(bridge_asset_tests);
 
     const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
@@ -39,7 +56,7 @@ pub fn build(b: *std.Build) void {
     const install_echo_index = b.addInstallFile(b.path("examples/echo/index.html"), "examples/echo/index.html");
     const install_echo_app_js = b.addInstallFile(b.path("examples/echo/app.js"), "examples/echo/app.js");
     const install_echo_bridge_js = b.addInstallFile(
-        b.path("src/js/browser_bridge.js"),
+        bridgeAsset(b, "dom").js,
         "examples/echo/browser_bridge.js",
     );
     const fetch_wasm = b.addExecutable(.{
@@ -63,7 +80,7 @@ pub fn build(b: *std.Build) void {
     const install_fetch_app_js = b.addInstallFile(b.path("examples/fetch/app.js"), "examples/fetch/app.js");
     const install_fetch_data = b.addInstallFile(b.path("examples/fetch/data.txt"), "examples/fetch/data.txt");
     const install_fetch_bridge_js = b.addInstallFile(
-        b.path("src/js/browser_bridge.js"),
+        bridgeAsset(b, "dom,fetch").js,
         "examples/fetch/browser_bridge.js",
     );
     const ssr_enhance_wasm = b.addExecutable(.{
@@ -86,7 +103,7 @@ pub fn build(b: *std.Build) void {
     const install_ssr_enhance_index = b.addInstallFile(b.path("examples/ssr-enhance/index.html"), "examples/ssr-enhance/index.html");
     const install_ssr_enhance_app_js = b.addInstallFile(b.path("examples/ssr-enhance/app.js"), "examples/ssr-enhance/app.js");
     const install_ssr_enhance_bridge_js = b.addInstallFile(
-        b.path("src/js/browser_bridge.js"),
+        bridgeAsset(b, "dom").js,
         "examples/ssr-enhance/browser_bridge.js",
     );
     const csr_wasm = b.addExecutable(.{
@@ -110,7 +127,7 @@ pub fn build(b: *std.Build) void {
     const install_csr_app_js = b.addInstallFile(b.path("examples/csr/app.js"), "examples/csr/app.js");
     const install_csr_data = b.addInstallFile(b.path("examples/csr/data.txt"), "examples/csr/data.txt");
     const install_csr_bridge_js = b.addInstallFile(
-        b.path("src/js/browser_bridge.js"),
+        bridgeAsset(b, "dom,fetch").js,
         "examples/csr/browser_bridge.js",
     );
     const spa_like_wasm = b.addExecutable(.{
@@ -133,12 +150,13 @@ pub fn build(b: *std.Build) void {
     const install_spa_like_index = b.addInstallFile(b.path("examples/spa-like/index.html"), "examples/spa-like/index.html");
     const install_spa_like_app_js = b.addInstallFile(b.path("examples/spa-like/app.js"), "examples/spa-like/app.js");
     const install_spa_like_bridge_js = b.addInstallFile(
-        b.path("src/js/browser_bridge.js"),
+        bridgeAsset(b, "dom,history").js,
         "examples/spa-like/browser_bridge.js",
     );
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_mod_tests.step);
+    test_step.dependOn(&run_bridge_asset_tests.step);
 
     const example_echo_step = b.step("example-echo", "Install the echo Wasm example assets");
     example_echo_step.dependOn(&install_echo_wasm.step);
@@ -221,6 +239,15 @@ pub fn build(b: *std.Build) void {
     const bridge_js_check_step = b.step("bridge-js-check", "Run negative-path checks for the packaged JS browser bridge");
     bridge_js_check_step.dependOn(&bridge_js_check_cmd.step);
 
+    const selected_bridge_check_cmd = b.addSystemCommand(&.{ "python3", "tools/check_selected_bridge_assets.py" });
+    selected_bridge_check_cmd.setCwd(b.path("."));
+    selected_bridge_check_cmd.addFileArg(bridgeAsset(b, "core").js);
+    selected_bridge_check_cmd.addFileArg(bridgeAsset(b, "storage,timer").js);
+    selected_bridge_check_cmd.addFileArg(bridgeAsset(b, "dom,fetch").js);
+
+    const selected_bridge_check_step = b.step("selected-bridge-check", "Run checks for selected JS browser bridge assets");
+    selected_bridge_check_step.dependOn(&selected_bridge_check_cmd.step);
+
     const example_interaction_cmd = b.addSystemCommand(&.{ "python3", "tools/check_example_interactions.py" });
     example_interaction_cmd.setCwd(b.path("."));
     example_interaction_cmd.step.dependOn(&example_check_cmd.step);
@@ -230,7 +257,27 @@ pub fn build(b: *std.Build) void {
 
     const verify_step = b.step("verify", "Run library tests and example smoke verification");
     verify_step.dependOn(&run_mod_tests.step);
+    verify_step.dependOn(&run_bridge_asset_tests.step);
     verify_step.dependOn(&example_interaction_cmd.step);
     verify_step.dependOn(&example_smoke_cmd.step);
     verify_step.dependOn(&bridge_js_check_cmd.step);
+    verify_step.dependOn(&selected_bridge_check_cmd.step);
+}
+
+const BridgeAsset = struct {
+    js: std.Build.LazyPath,
+    module: std.Build.LazyPath,
+};
+
+fn bridgeAsset(b: *std.Build, caps: []const u8) BridgeAsset {
+    const selection = bridge_assets.parseCapabilities(caps) catch |err| {
+        std.debug.panic("invalid browser_bridge_caps '{s}': {s}", .{ caps, @errorName(err) });
+    };
+    const source = bridge_assets.render(b.allocator, selection) catch @panic("failed to render browser bridge asset");
+    const module_source = bridge_assets.renderAssetModule(b.allocator) catch @panic("failed to render browser bridge asset module");
+    const files = b.addWriteFiles();
+    return .{
+        .js = files.add("browser_bridge.js", source),
+        .module = files.add("browser_bridge_asset.zig", module_source),
+    };
 }
