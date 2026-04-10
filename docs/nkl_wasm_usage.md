@@ -11,6 +11,7 @@ The short version is:
 3. use the package wrappers for DOM, storage, fetch, timers, and history
 4. bootstrap the Wasm module in the browser with
    [`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js)
+   or a selected bridge asset from the package dependency
 
 If you read only one section first, read **Quick Start**.
 
@@ -40,6 +41,7 @@ pub fn build(b: *std.Build) void {
     const nkl_wasm_dep = b.dependency("nkl_wasm", .{
         .target = target,
         .optimize = optimize,
+        .browser_bridge_caps = "dom",
     });
 
     const wasm_target = b.resolveTargetQuery(.{
@@ -62,8 +64,22 @@ pub fn build(b: *std.Build) void {
     wasm.rdynamic = true;
     wasm.import_symbols = true;
     wasm.export_memory = true;
+
+    const generated_assets = b.addWriteFiles();
+    _ = generated_assets.addCopyFile(
+        wasm.getEmittedBin(),
+        "app.wasm",
+    );
+    _ = generated_assets.addCopyFile(
+        nkl_wasm_dep.namedLazyPath("browser_bridge_js"),
+        "browser_bridge.js",
+    );
 }
 ```
+
+`browser_bridge_caps = "dom"` is enough for this quick-start app because it
+only uses DOM helpers and string callbacks. Omit the option or set it to
+`"full"` when you want the complete compatibility bridge.
 
 ### 3. Write the smallest possible Wasm-side app
 
@@ -218,6 +234,73 @@ fallback behavior instead of taking the whole app down.
 
 ## Common Workflows
 
+### Selecting only the needed JS bridge blocks
+
+The checked-in
+[`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js)
+remains the full compatibility bridge. For dependency builds, `nkl-wasm` also
+publishes selected bridge assets so host projects can ship only the JS bridge
+capabilities they use.
+
+Pick capability groups explicitly:
+
+```zig
+const nkl_wasm_dep = b.dependency("nkl_wasm", .{
+    .target = target,
+    .optimize = optimize,
+    .browser_bridge_caps = "dom,fetch",
+});
+```
+
+Then copy the selected JS asset into your browser bundle:
+
+```zig
+const generated_assets = b.addWriteFiles();
+_ = generated_assets.addCopyFile(
+    nkl_wasm_dep.namedLazyPath("browser_bridge_js"),
+    "browser_bridge.js",
+);
+```
+
+If your server wants to embed the selected bridge bytes directly in a Zig
+module, import the generated asset module:
+
+```zig
+app_mod.addAnonymousImport("browser_bridge_asset", .{
+    .root_source_file = nkl_wasm_dep.namedLazyPath("browser_bridge_asset_zig"),
+});
+```
+
+Supported `browser_bridge_caps` values:
+
+- `full`
+  Complete compatibility bridge. This is the default.
+- `core`
+  Instantiation, import merging, string exchange, logging, and timing only.
+- `dom`
+  DOM reads/writes, class helpers, focus, scroll, and string callback delivery.
+- `storage`
+  localStorage/sessionStorage operations and string callback delivery.
+- `fetch`
+  text fetch and fetch callback delivery.
+- `timer`
+  timeout scheduling/clearing and timer callback delivery.
+- `history`
+  history push and document title updates.
+
+Common selections:
+
+- `"dom"` for echo-style input and DOM update examples
+- `"dom,fetch"` for client-rendered or fetch-driven pages
+- `"dom,history"` for SPA-like navigation examples
+- `"storage,timer"` when the app does not need DOM or fetch imports
+
+The selected asset still exports the same JS entrypoint:
+
+```js
+import { createBrowserBridge } from "./browser_bridge.js";
+```
+
 ### Reading input values
 
 Request a value:
@@ -323,24 +406,15 @@ export fn bridgeTimerFired(timer_id: u32) void {
   Thin wrappers for timeout scheduling and clearing.
 
 If you need the exact exported names or function list, use
-[`reference.md`](/home/lloyd/dev/home-edge/prj/nkl-wasm/docs/reference.md).
+[`nkl_wasm_reference.md`](/home/lloyd/dev/home-edge/prj/nkl-wasm/docs/nkl_wasm_reference.md).
 
 ## JS Runtime Details
 
 The packaged browser bridge lives at
 [`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js).
 
-It currently handles:
-
-- Wasm instantiation
-- import merging
-- string exchange
-- DOM operations
-- storage operations
-- text fetch
-- timers
-- history/title
-- focus/scroll helpers
+That file remains the full compatibility bridge. Selected bridge assets are
+described under **Selecting only the needed JS bridge blocks**.
 
 It also owns the package's current host-side robustness policy:
 
@@ -369,6 +443,10 @@ zig build example-smoke
 
 ```bash
 zig build bridge-js-check
+```
+
+```bash
+zig build selected-bridge-check
 ```
 
 ```bash

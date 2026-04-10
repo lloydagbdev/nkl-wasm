@@ -69,8 +69,8 @@ consumers.
 If you are evaluating the package for the first time, read in this order:
 
 1. This `README.md`
-2. [`docs/usage.md`](/home/lloyd/dev/home-edge/prj/nkl-wasm/docs/usage.md)
-3. [`docs/reference.md`](/home/lloyd/dev/home-edge/prj/nkl-wasm/docs/reference.md)
+2. [`nkl_wasm_usage.md`](/home/lloyd/dev/home-edge/prj/nkl-wasm/docs/nkl_wasm_usage.md)
+3. [`nkl_wasm_reference.md`](/home/lloyd/dev/home-edge/prj/nkl-wasm/docs/nkl_wasm_reference.md)
 4. One of the shipped examples under [`examples/`](/home/lloyd/dev/home-edge/prj/nkl-wasm/examples)
 
 ## Using It In Another Zig Project
@@ -117,6 +117,25 @@ const nkl_wasm = @import("nkl_wasm");
 The JS side is expected to reuse
 [`browser_bridge.js`](/home/lloyd/dev/home-edge/prj/nkl-wasm/src/js/browser_bridge.js)
 instead of rebuilding ad hoc string-bridging code in every app.
+That file is the full compatibility bridge. Host projects that do not need the
+full browser surface can pass `browser_bridge_caps` to the dependency and use
+the generated `browser_bridge_js` or `browser_bridge_asset_zig` named path:
+
+```zig
+const nkl_wasm_dep = b.dependency("nkl_wasm", .{
+    .target = target,
+    .optimize = optimize,
+    .browser_bridge_caps = "dom,fetch",
+});
+
+_ = generated_assets.addCopyFile(
+    nkl_wasm_dep.namedLazyPath("browser_bridge_js"),
+    "browser_bridge.js",
+);
+```
+
+Supported selections are `full`, `core`, and comma-separated capability groups:
+`dom`, `storage`, `fetch`, `timer`, and `history`.
 
 ## What The Library Provides
 
@@ -144,6 +163,7 @@ JS runtime:
 - import merging
 - JS string <-> Wasm memory exchange
 - browser API bridging into exported callbacks
+- selected bridge assets for explicit capability groups
 
 ## What To Read In Code
 
@@ -198,6 +218,12 @@ JS bridge negative-path check:
 zig build bridge-js-check
 ```
 
+Selected JS bridge asset check:
+
+```bash
+zig build selected-bridge-check
+```
+
 Example interaction check:
 
 ```bash
@@ -219,5 +245,6 @@ zig build serve -- --directory zig-out/examples/spa-like
 - Zig unit tests
 - example asset verification
 - JS bridge negative-path checks
+- selected JS bridge asset checks
 - example interaction checks under a minimal DOM harness
 - served example smoke checks
